@@ -1,0 +1,16 @@
+Qty Value                        Device                       Package                      Parts                                       Description                
+3                                LEDSML0603                   SML0603                      LED1, LED2, LED3                            LED                        
+1   0.1u                         C-USC0603                    C0603                        C17                                         CAPACITOR, American symbol 
+2   10u                          C-USC0603                    C0603                        C18, C19                                    CAPACITOR, American symbol 
+1   120                          R-US_R0603                   R0603                        R14                                         RESISTOR, American symbol  
+3   1k                           R-US_R0603                   R0603                        R16, R17, R18                               RESISTOR, American symbol  
+2   4.7k                         R-US_R0603                   R0603                        R1, R2                                      RESISTOR, American symbol  
+2   680                          R-US_R0603                   R0603                        R13, R15                                    RESISTOR, American symbol  
+1   ADM3078E                     ADM3078E                     ADM3078E                     IC5                                                                    
+4   B4B-XH-A                     B4B-XH-A                     B4B-XH-A                     CH1, CH2, CH3, CH4                                                     
+1   CDSOT23-SM712                CDSOT23-SM712                SOT-23-3                     D1                                                                     
+1   ICM-42688-P-MODULE-PINHEADER ICM-42688-P-MODULE-PINHEADER ICM-42688-P-MODULE-PINHEADER M2                                                                     
+1   LD1117S50                    LD1117S50                    SOT-223                      U1                                                                     
+1   SEEED_XIAO_RP2040_HOLE       SEEED_XIAO_RP2040_HOLE       SEEED_XIAO_HOLE              M1                                                                     
+9   SHORTLAND                    SHORTLAND                    SHORTLAND                    JP1, JP2, JP3, JP4, JP5, JP6, JP7, JP8, JP9                            
+1   SS34FA                       SS34FA                       SS34FA                       D2                                                                     
