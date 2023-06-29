@@ -1,3 +1,48 @@
+/*
+  Copyright (c) 2023 Masato Kubotera
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+  This library is based on the Arduino library for communicating with the ICM42688: "https://github.com/finani/ICM42688" written by Inhwan Wee, with parameters modified for use with the SUSTAINA-OP.
+
+
+  Copyright (c) 2022 Inhwan Wee
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
 #include "Arduino.h"
 #include "ICM42688.h"
 #include "registers.h"
@@ -51,11 +96,23 @@ int ICM42688::begin() {
   }
 
   // 16G is default -- do this to set up accel resolution scaling
-  int ret = setAccelFS(gpm16);
+  // int ret = setAccelFS(gpm16);
+  // 8G is custom - do this to set up accel resolution scaling
+  int ret = setAccelFS(gpm8);
   if (ret < 0) return ret;
 
   // 2000DPS is default -- do this to set up gyro resolution scaling
-  ret = setGyroFS(dps2000);
+  // ret = setGyroFS(dps2000);
+  // 1000DPS is custom -- do this to set up gyro resolution scaling
+  ret = setGyroFS(dps1000);
+  if (ret < 0) return ret;
+
+  // custom - low speed SPI for register setting
+  ret = setAccelODR(odr200);
+  if (ret < 0) return ret;
+
+  // custom - low speed SPI for register setting
+  ret = setGyroODR(odr200);
   if (ret < 0) return ret;
 
   // // disable inner filters (Notch filter, Anti-alias filter, UI filter block)
