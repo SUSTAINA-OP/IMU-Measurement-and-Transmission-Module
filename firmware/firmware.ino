@@ -1,7 +1,7 @@
 #include "./src/ICM42688.h"
 
 // an ICM42688 object with the ICM42688 sensor on SPI bus 0 and chip select pin 7
-ICM42688 IMU(SPI, 7);
+ICM42688 IMU(SPI, 3);
 
 unsigned long ts, te;
 
