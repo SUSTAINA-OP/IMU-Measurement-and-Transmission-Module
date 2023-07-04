@@ -94,6 +94,7 @@ int ICM42688::begin() {
   if(writeRegister(UB0_REG_PWR_MGMT0, 0x0F) < 0) {
     return -4;
   }
+  delay(100);
 
   // 16G is default -- do this to set up accel resolution scaling
   // int ret = setAccelFS(gpm16);
@@ -679,7 +680,7 @@ void ICM42688::reset() {
   writeRegister(UB0_REG_DEVICE_CONFIG, 0x01);
 
   // wait for ICM42688 to come back up
-  delay(1);
+  delay(100);
 }
 
 /* gets the ICM42688 WHO_AM_I register value */
