@@ -122,9 +122,11 @@ int ICM42688::begin() {
   // }
 
   // estimate gyro bias
-  if (calibrateGyro() < 0) {
-    return -8;
-  }
+  /*
+    if (calibrateGyro() < 0) {
+      return -8;
+    }
+  */
   // successful init, return 1
   return 1;
 }

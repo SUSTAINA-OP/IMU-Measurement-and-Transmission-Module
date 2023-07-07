@@ -1,11 +1,16 @@
 #include "./src/ICM42688.h"
+#include <FlashStorage.h>
 
-// an ICM42688 object with the ICM42688 sensor on SPI bus 0 and chip select pin 7
+// an ICM42688 object with the ICM42688 sensor on SPI bus 0 and chip select pin 3
 ICM42688 IMU(SPI, 3);
 
 unsigned long ts, te;
 
 byte _data[sizeof(float) * 6];
+
+FlashStorage(gyrB_x, float);
+FlashStorage(gyrB_y, float);
+FlashStorage(gyrB_z, float);
 
 void setup()
 {
@@ -23,6 +28,14 @@ void setup()
     {
     }
   }
+
+  float read_gyrB_x = gyrB_x.read();
+  float read_gyrB_y = gyrB_y.read();
+  float read_gyrB_z = gyrB_z.read();
+
+  IMU.setGyroBiasX(read_gyrB_x);
+  IMU.setGyroBiasY(read_gyrB_y);
+  IMU.setGyroBiasZ(read_gyrB_z);
 }
 
 void loop()
@@ -30,6 +43,7 @@ void loop()
   if (Serial.available())
   {
     byte received_char = Serial.read();
+
     if (received_char == 'r' || received_char == 'R')
     {
       // start communication with IMU
@@ -40,8 +54,20 @@ void loop()
         {
         }
       }
-      
+
       Serial.write("c", sizeof(byte));
+    }
+    else if (received_char == 'b' || received_char == 'B') {
+
+      IMU.calibrateGyro();
+
+      float gyro_bias_x = IMU.getGyroBiasX();
+      float gyro_bias_y = IMU.getGyroBiasY();
+      float gyro_bias_z = IMU.getGyroBiasZ();
+
+      gyrB_x.write(gyro_bias_x);
+      gyrB_y.write(gyro_bias_y);
+      gyrB_z.write(gyro_bias_z);
     }
     else
     {
