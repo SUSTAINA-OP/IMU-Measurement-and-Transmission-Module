@@ -44,21 +44,8 @@ void loop()
   {
     byte received_char = Serial.read();
 
-    if (received_char == 'r' || received_char == 'R')
-    {
-      // start communication with IMU
-      int status = IMU.begin();
-      if (status < 0)
-      {
-        while (1)
-        {
-        }
-      }
-
-      Serial.write("c", sizeof(byte));
-    }
-    else if (received_char == 'b' || received_char == 'B') {
-
+    if (received_char == 'b' || received_char == 'B') {
+      // estimates the gyro biases
       IMU.calibrateGyro();
 
       float gyro_bias_x = IMU.getGyroBiasX();
