@@ -22,7 +22,7 @@
                 <tr>
                     <td><img src="./images/brd_top.png" width="160px"></td>
                     <td><img src="./images/brd_bottom.png" width="160px"></td>
-                    <td><img src="" width="160px"></td>
+                    <td><img src="https://github.com/SUSTAINA-OP/IMU-Measurement-and-Transmission-Module/assets/53966390/2c578269-a02b-40aa-be2a-d1e0e34f27b2" width="160px"></td>
                 </tr>
             </table>
         </p>
