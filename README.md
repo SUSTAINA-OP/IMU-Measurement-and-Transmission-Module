@@ -10,6 +10,12 @@
     <p><strong>This product is currently under development!</strong></p>
     <h1>IMU Measurement and Transmission Module</h1>
         <p>
+            This product is a module enabling the <a href="https://github.com/SUSTAINA-OP/ICM-42688-P-Module">SUSTAINA-OP/ICM-42688-P-Module</a> (IMU module) to be connected to a USB or RS-485 I/F through a microcontroller.<br><br>
+            The <a href="/firmware">firmware</a> for this product to be written to the microcontroller is a modification of the following library.
+            <ul>
+                <li><a href="https://github.com/finani/ICM42688">finani/ICM42688</a></li>
+            </ul>
+            (The firmware of this product currently supports only USB I/F connection.)
         </p>
     <h2>Features Rev. 1</h2>
         <p>
@@ -37,6 +43,7 @@
         This product is designed with the following software.
             <ul>
                 <li><a href="https://www.autodesk.com/products/eagle/overview">Autodesk Eagle 9.6.2</a></li>
+                <li><a href="https://www.arduino.cc/en/software">Arduino IDE 1.8.19</a></li>
             </ul>
     </p>
     <h2>Repository Contents</h2>
@@ -48,6 +55,8 @@
                 <dd>Libraries used in Autodesk Eagle design</dd>
                 <dt><a href="/pcb_order">\pcb_order</a> </dt>
                 <dd>Gerber data and documentation for ordering PCB</dd>
+                <dt><a href="/firmware">\firmware</a> </dt>
+                <dd>Sample firmware to be written to the microcontroller board</dd>
                 <dt><a href="/schematic.pdf">schematic.pdf</a></dt>
                 <dd>Circuit diagram of this product</dd>
                 <dt>*.brd</dt>
