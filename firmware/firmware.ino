@@ -43,7 +43,7 @@ void loop()
   if (Serial.available())
   {
     byte received_char = Serial.read();
-
+    
     if (received_char == 'b' || received_char == 'B') {
       // estimates the gyro biases
       IMU.calibrateGyro();
@@ -55,6 +55,12 @@ void loop()
       gyrB_x.write(gyro_bias_x);
       gyrB_y.write(gyro_bias_y);
       gyrB_z.write(gyro_bias_z);
+    }
+    else if (received_char == 't' || received_char == 'T'){
+      // estimates the gyro biases
+      IMU.calibrateGyro();
+
+      Serial.println("BiasX: " + String(IMU.getGyroBiasX()) + ", BiasY: " + String(IMU.getGyroBiasY()) + ", BiasZ: " + String(IMU.getGyroBiasZ()) + ", Temp.: " + String(IMU.temp()));
     }
     else
     {
