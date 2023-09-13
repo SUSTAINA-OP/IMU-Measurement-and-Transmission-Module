@@ -6,7 +6,7 @@ ICM42688 IMU(SPI, 3);
 
 unsigned long ts, te;
 
-byte _data[sizeof(float) * 6];
+byte _data[sizeof(float) * 7];
 
 FlashStorage(gyrB_x, float);
 FlashStorage(gyrB_y, float);
@@ -67,11 +67,12 @@ void loop()
       float _gyrX = IMU.gyrX();
       float _gyrY = IMU.gyrY();
       float _gyrZ = IMU.gyrZ();
+      float _temp = IMU.temp();
 
       // convert 6 float variables to byte array
       byte *ptr = NULL;
-      byte data[sizeof(float) * 6];
-      for (int data_itr = 0; data_itr < 6; data_itr++)
+      byte data[sizeof(float) * 7];
+      for (int data_itr = 0; data_itr < 7; data_itr++)
       {
         switch (data_itr)
         {
@@ -92,6 +93,9 @@ void loop()
             break;
           case 5:
             ptr = (byte *)&_gyrZ;
+            break;
+          case 6:
+            ptr = (byte *)&_temp;
             break;
         }
         for (int ptr_itr = 0; ptr_itr < sizeof(float); ptr_itr++)
