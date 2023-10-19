@@ -4,8 +4,6 @@
 // an ICM42688 object with the ICM42688 sensor on SPI bus 0 and chip select pin 3
 ICM42688 IMU(SPI, 3);
 
-unsigned long ts, te;
-
 byte _data[sizeof(float) * 7];
 
 FlashStorage(gyrB_x, float);
