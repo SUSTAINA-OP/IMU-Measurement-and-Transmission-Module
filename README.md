@@ -70,7 +70,14 @@
             </dl>
         </p>
     <h2>Documentation</h2>
+    <h3>Documentation</h3>
         <p>
+            The following design errors have been identified in Rev. 1 of this product.
+            <ul>
+              <li>TXDEN of UART/RS-485 conversion IC is not wired to the microcontroller board</li>
+                When used with USB I/F, there is no problem, but when used with RS-485 I/F, solder a jumper wire between TXDEN and the microcontroller as shown in the figure below.<br>
+                <img src="https://github.com/SUSTAINA-OP/IMU-Measurement-and-Transmission-Module/assets/53966390/fc00d608-44b5-459a-8d88-84002cd31e3f" width=320px>
+            </ul>
         </p>
     <h2>References</h2>
         <p>
