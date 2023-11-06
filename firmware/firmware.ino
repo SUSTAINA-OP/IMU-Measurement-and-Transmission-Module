@@ -1,4 +1,4 @@
-#include "./src/ICM42688.h"
+#include "./src/ICM42688/ICM42688.h"
 #include <FlashStorage.h>
 
 // an ICM42688 object with the ICM42688 sensor on SPI bus 0 and chip select pin 3

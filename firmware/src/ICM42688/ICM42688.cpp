@@ -696,3 +696,11 @@ uint8_t ICM42688::whoAmI() {
   // return the register value
   return _buffer[0];
 }
+
+bool ICM42688::getWhoAmI() {
+  // check the WHO AM I byte
+  if(whoAmI() != WHO_AM_I) {
+    return false;
+  }
+  return true;
+}
