@@ -202,6 +202,7 @@ class ICM42688
     void setAccelCalX(float bias,float scaleFactor);
     void setAccelCalY(float bias,float scaleFactor);
     void setAccelCalZ(float bias,float scaleFactor);
+    bool getWhoAmI();
   protected:
     ///\brief I2C Communication
     uint8_t _address = 0;
