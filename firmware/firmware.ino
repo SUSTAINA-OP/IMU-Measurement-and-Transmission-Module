@@ -57,6 +57,7 @@ bool imu_WhoAmI = false;
 
 std::vector<float> rxFloatData;
 std::vector<float> txFloatData;
+std::vector<uint8_t> txByteData;
 
 ICM42688 IMU(SPI, cs_pin);
 
@@ -107,8 +108,10 @@ void loop() {
 
       rxFloatData.clear();
       txFloatData.clear();
+      txByteData.clear();
 
       size_t txFloatData_length = 0;
+      size_t txByteData_length = 0;
       size_t txPacket_length = txPacket_min_length;
 
       if (CRC.checkCrc16(rxPacket, rxPacket_length)) {
@@ -143,10 +146,10 @@ void loop() {
           txPacket_length += txFloatData_length;
         }
 
-        if (rxCommand == cheackFirmwareCommand) {
-          txPacket_length += 1;
+        if (!txByteData.empty()) {
+          txByteData_length = txByteData.size() * sizeof(uint8_t);
+          txPacket_length += txByteData_length;
         }
-
       } else {
         tx_errorStatus |= crc_errorStatus;
       }
@@ -166,8 +169,9 @@ void loop() {
         packetIndex += txFloatData_length;
       }
 
-      if (rxCommand == cheackFirmwareCommand) {
-        txPacket[packetIndex++] = firmwareVersion;
+      if (!txByteData.empty()) {
+        memcpy(txPacket + packetIndex, txByteData.data(), txByteData_length);
+        packetIndex += txByteData_length;
       }
 
       uint16_t txCrc = CRC.getCrc16(txPacket, txPacket_length - crc_length);
@@ -355,6 +359,7 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @return: firmware virsion
             */
 
+      txByteData.push_back(firmwareVersion);
       break;
 
     default:
