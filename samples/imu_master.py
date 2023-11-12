@@ -9,8 +9,6 @@ from CRC16 import CRC16 as CRC
 ser = serial.Serial('/dev/ttyACM0', 115200)
 ser.timeout = 1/1000
 
-specifiedBiasSetupCommand = 0xB2
-
 # command
 # commands to return the values: 0xA*
 estimatedAccelGyroTempCommand = 0xA0
