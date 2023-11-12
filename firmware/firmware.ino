@@ -7,12 +7,13 @@
 /**
  * settings by users
  */
-const uint8_t header[] = { 0xFE, 0xFE };
+const uint8_t headerPacket[] = { 0xFE, 0xFE };
 const uint8_t cs_pin = 3;
-long usb_serial_baudrate = 115200;
-const uint8_t firmware_version = 0x00;
+const uint32_t UsbSerial_baudrate = 115200;
+const uint8_t firmwareVersion = 0x01;
 
 //! command
+//! commands to return the values: 0xA*
 const uint8_t estimatedAccelGyroTempCommand = 0xA0;
 const uint8_t estimatedAccelCommand = 0xA1;
 const uint8_t estimatedGyroCommand = 0xA2;
@@ -20,40 +21,50 @@ const uint8_t estimatedTempCommand = 0xA3;
 const uint8_t estimatedBiasCommand = 0xA4;
 const uint8_t storedBiasCommand = 0xA5;
 const uint8_t adaptedBiasCommand = 0xA6;
-const uint8_t resetupBiasCommand = 0xB0;
+
+//! commands to change/return the values: 0xB*
+const uint8_t setupBiasCommand = 0xB0;
+const uint8_t replaceSpecifiedBiasCommand = 0xB1;
+const uint8_t adaptedSpecifiedBiasCommand = 0xB2;
+
 const uint8_t restartIMUCommand = 0xC0;
+
 const uint8_t cheackFirmwareCommand = 0xD0;
 
 //! error status
-const uint8_t imuConnectionErrorStatus = 0x10;
-const uint8_t crcErrorStatus = 0xA0;
-const uint8_t commandErrorStatus = 0xB0;
+// const uint8_t rxPacket_errorStatus = 0b00000001;
+const uint8_t crc_errorStatus = 0b00000010;
+// const uint8_t imuConnect_errorStatus = 00000100;
+// const uint8_t imuRead_errorStatus = 00001000;
+const uint8_t commandNotFound_errorStatus = 0b00010000;
+const uint8_t commandProcessing_errorStatus = 0b00100000;
 
 /**
  * settings users do not need to change
  */
 
-const size_t header_length = sizeof(header);
+const size_t headerPacket_length = sizeof(headerPacket);
 const size_t crc_length = sizeof(uint16_t);
-size_t transmitted_data_length = 0;
-size_t transmitted_packet_length = 0;
 
-//! received packet length: headder + command + crc
-const size_t received_packet_length = header_length + 1 + crc_length;
+//! rx packet: headder + command + length + data * n + crc
+const size_t rxPacket_forward_length = headerPacket_length + 2;
+const size_t rxPacket_min_length = rxPacket_forward_length + crc_length;
+
+//! tx packet: headder + command + length + error + data * n + crc
+const size_t txPacket_min_length = headerPacket_length + 3 + crc_length;
 
 int16_t imu_begin_status = 0;
 int16_t imu_status = 0;
 bool imu_WhoAmI = false;
 
-uint8_t transmitted_error = 0x00;
-
-std::vector<float> transmitted_data;
+std::vector<float> rxFloatData;
+std::vector<float> txFloatData;
 
 ICM42688 IMU(SPI, cs_pin);
 
 CRC16 CRC;
 
-//! Settings for non-volatile flash memory
+//! settings for non-volatile flash memory
 FlashStorage(gyrB_x, float);
 FlashStorage(gyrB_y, float);
 FlashStorage(gyrB_z, float);
@@ -71,81 +82,116 @@ void loop() {
     imu_begin_status = IMU.begin();
   }
 
-  if (Serial.available() >= received_packet_length) {
+  if (Serial.available() >= rxPacket_min_length) {
 
-    uint8_t received_packet[received_packet_length] = {};
+    uint8_t rxPacket_forward[rxPacket_forward_length] = {};
 
-    if (checkHeader(received_packet)) {
+    if (checkHeader(headerPacket, headerPacket_length, rxPacket_forward)) {
 
-      //! save to received packet
-      for (int i = header_length; i < received_packet_length; i++) {
-        received_packet[i] = Serial.read();
+      for (int i = headerPacket_length; i < rxPacket_forward_length; i++) {
+        rxPacket_forward[i] = Serial.read();
       }
 
-      uint8_t command = received_packet[header_length];
-      transmitted_error = 0x00;
+      uint8_t rxCommand = rxPacket_forward[headerPacket_length];
+      size_t rxPacket_length = rxPacket_forward[headerPacket_length + 1];
 
-      //! default transmitted paclet length: headder + command + length + error + crc
-      transmitted_packet_length = header_length + 3 + crc_length;
+      uint8_t rxPacket[rxPacket_length] = {};
 
-      //! clear variable-length array of transmittedted data
-      transmitted_data.clear();
+      for (int i = 0; i < rxPacket_length; i++) {
+        if (i < rxPacket_forward_length) {
+          rxPacket[i] = rxPacket_forward[i];
+        } else {
+          rxPacket[i] = Serial.read();
+        }
+      }
 
-      //! crc adapted
-      if (CRC.checkCrc16(received_packet, received_packet_length)) {
+      uint8_t tx_errorStatus = 0b00000000;
 
-        processCommand(command);
+      rxFloatData.clear();
+      txFloatData.clear();
 
-        transmitted_data_length = transmitted_data.size() * sizeof(float);
-        transmitted_packet_length += transmitted_data_length;
+      size_t txFloatData_length = 0;
+      size_t txPacket_length = txPacket_min_length;
 
-        if (command == cheackFirmwareCommand) {
-          transmitted_packet_length += 1;
+      if (CRC.checkCrc16(rxPacket, rxPacket_length)) {
+
+        if (rxPacket_length > rxPacket_min_length) {
+
+          size_t rxFloatData_length = rxPacket_length - rxPacket_min_length;
+
+          uint8_t rxFloatData_bytes[rxFloatData_length] = {};
+          for (int i = 0; i < rxFloatData_length; i++) {
+            rxFloatData_bytes[i] = rxPacket[i + rxPacket_forward_length];
+          }
+
+          size_t rxFloatData_count = rxFloatData_length / sizeof(float);
+
+          for (int i = 0; i < rxFloatData_count; i++) {
+            float rxFloatData_float = 0;
+            byte* bytePtr = (byte*)&rxFloatData_float;
+
+            for (int j = 0; j < sizeof(float); j++) {
+              bytePtr[j] = rxFloatData_bytes[i * sizeof(float) + j];
+            }
+
+            rxFloatData.push_back(rxFloatData_float);
+          }
+        }
+
+        processCommand(rxCommand, &tx_errorStatus);
+
+        if (!txFloatData.empty()) {
+          txFloatData_length = txFloatData.size() * sizeof(float);
+          txPacket_length += txFloatData_length;
+        }
+
+        if (rxCommand == cheackFirmwareCommand) {
+          txPacket_length += 1;
         }
 
       } else {
-        transmitted_error = crcErrorStatus;
+        tx_errorStatus |= crc_errorStatus;
       }
 
-      uint8_t transmitted_packet[transmitted_packet_length] = {};
-      uint8_t packetIndex = 0;
+      uint8_t txPacket[txPacket_length] = {};
+      size_t packetIndex = 0;
 
-      memcpy(transmitted_packet, header, header_length);
-      packetIndex += header_length;
+      memcpy(txPacket, headerPacket, headerPacket_length);
+      packetIndex += headerPacket_length;
 
-      transmitted_packet[packetIndex++] = command;
-      transmitted_packet[packetIndex++] = (uint8_t)transmitted_packet_length;
-      transmitted_packet[packetIndex++] = transmitted_error;
+      txPacket[packetIndex++] = rxCommand;
+      txPacket[packetIndex++] = (uint8_t)txPacket_length;
+      txPacket[packetIndex++] = tx_errorStatus;
 
-      if (!transmitted_data.empty()) {
-        memcpy(transmitted_packet + packetIndex, transmitted_data.data(), transmitted_data_length);
-        packetIndex += transmitted_data_length;
+      if (!txFloatData.empty()) {
+        memcpy(txPacket + packetIndex, txFloatData.data(), txFloatData_length);
+        packetIndex += txFloatData_length;
       }
 
-      if (command == cheackFirmwareCommand) {
-        transmitted_packet[packetIndex++] = firmware_version;
+      if (rxCommand == cheackFirmwareCommand) {
+        txPacket[packetIndex++] = firmwareVersion;
       }
 
-      uint16_t transmitted_crc = CRC.getCrc16(transmitted_packet, transmitted_packet_length - crc_length);
-      transmitted_packet[packetIndex++] = lowByte(transmitted_crc);
-      transmitted_packet[packetIndex++] = highByte(transmitted_crc);
+      uint16_t txCrc = CRC.getCrc16(txPacket, txPacket_length - crc_length);
+      txPacket[packetIndex++] = lowByte(txCrc);
+      txPacket[packetIndex++] = highByte(txCrc);
 
-      Serial.write(transmitted_packet, transmitted_packet_length);
+      Serial.write(txPacket, txPacket_length);
     }
   }
 }
 
-bool checkHeader(uint8_t received_packet[]) {
-  for (int i = 0; i < header_length; i++) {
+bool checkHeader(const uint8_t header[], const size_t length, uint8_t packet[]) {
+  for (int i = 0; i < length; i++) {
     if (Serial.read() != header[i]) {
       return false;
     }
-    received_packet[i] = header[i];
+    packet[i] = header[i];
   }
   return true;
 }
 
-void processCommand(uint8_t command) {
+void processCommand(uint8_t command, uint8_t* error) {
   switch (command) {
     case estimatedAccelGyroTempCommand:
       /**
@@ -155,13 +201,13 @@ void processCommand(uint8_t command) {
 
       imu_status = IMU.getAGT();
 
-      transmitted_data.push_back(IMU.accX());
-      transmitted_data.push_back(IMU.accY());
-      transmitted_data.push_back(IMU.accZ());
-      transmitted_data.push_back(IMU.gyrX());
-      transmitted_data.push_back(IMU.gyrY());
-      transmitted_data.push_back(IMU.gyrZ());
-      transmitted_data.push_back(IMU.temp());
+      txFloatData.push_back(IMU.accX());
+      txFloatData.push_back(IMU.accY());
+      txFloatData.push_back(IMU.accZ());
+      txFloatData.push_back(IMU.gyrX());
+      txFloatData.push_back(IMU.gyrY());
+      txFloatData.push_back(IMU.gyrZ());
+      txFloatData.push_back(IMU.temp());
       break;
 
     case estimatedAccelCommand:
@@ -172,9 +218,9 @@ void processCommand(uint8_t command) {
 
       IMU.getAGT();
 
-      transmitted_data.push_back(IMU.accX());
-      transmitted_data.push_back(IMU.accY());
-      transmitted_data.push_back(IMU.accZ());
+      txFloatData.push_back(IMU.accX());
+      txFloatData.push_back(IMU.accY());
+      txFloatData.push_back(IMU.accZ());
       break;
 
     case estimatedGyroCommand:
@@ -185,9 +231,9 @@ void processCommand(uint8_t command) {
 
       imu_status = IMU.getAGT();
 
-      transmitted_data.push_back(IMU.gyrX());
-      transmitted_data.push_back(IMU.gyrY());
-      transmitted_data.push_back(IMU.gyrZ());
+      txFloatData.push_back(IMU.gyrX());
+      txFloatData.push_back(IMU.gyrY());
+      txFloatData.push_back(IMU.gyrZ());
       break;
 
     case estimatedTempCommand:
@@ -198,7 +244,7 @@ void processCommand(uint8_t command) {
 
       imu_status = IMU.getAGT();
 
-      transmitted_data.push_back(IMU.temp());
+      txFloatData.push_back(IMU.temp());
       break;
 
     case estimatedBiasCommand:
@@ -209,9 +255,9 @@ void processCommand(uint8_t command) {
 
       imu_status = IMU.calibrateGyro();
 
-      transmitted_data.push_back(IMU.getGyroBiasX());
-      transmitted_data.push_back(IMU.getGyroBiasY());
-      transmitted_data.push_back(IMU.getGyroBiasZ());
+      txFloatData.push_back(IMU.getGyroBiasX());
+      txFloatData.push_back(IMU.getGyroBiasY());
+      txFloatData.push_back(IMU.getGyroBiasZ());
 
       //! restores the bias stored in non-volatile flash memory
       //! due to the estimated bias being adapted
@@ -226,9 +272,9 @@ void processCommand(uint8_t command) {
             * @return: 3-axis gyro bias [dps] in non-volatile flash memory
             */
 
-      transmitted_data.push_back(gyrB_x.read());
-      transmitted_data.push_back(gyrB_y.read());
-      transmitted_data.push_back(gyrB_z.read());
+      txFloatData.push_back(gyrB_x.read());
+      txFloatData.push_back(gyrB_y.read());
+      txFloatData.push_back(gyrB_z.read());
       break;
 
     case adaptedBiasCommand:
@@ -237,12 +283,12 @@ void processCommand(uint8_t command) {
             * @return: adapted 3-axis gyro bias [dps]
             */
 
-      transmitted_data.push_back(IMU.getGyroBiasX());
-      transmitted_data.push_back(IMU.getGyroBiasY());
-      transmitted_data.push_back(IMU.getGyroBiasZ());
+      txFloatData.push_back(IMU.getGyroBiasX());
+      txFloatData.push_back(IMU.getGyroBiasY());
+      txFloatData.push_back(IMU.getGyroBiasZ());
       break;
 
-    case resetupBiasCommand:
+    case setupBiasCommand:
       /**
             * @brief: estimates the gyro bias, adapt the estimated gyro bias, store it in non-volatile flash memory
             * @return: estimated 3-axis gyro bias [dps]
@@ -255,9 +301,54 @@ void processCommand(uint8_t command) {
       gyrB_y.write(IMU.getGyroBiasY());
       gyrB_z.write(IMU.getGyroBiasZ());
 
-      transmitted_data.push_back(IMU.getGyroBiasX());
-      transmitted_data.push_back(IMU.getGyroBiasY());
-      transmitted_data.push_back(IMU.getGyroBiasZ());
+      txFloatData.push_back(IMU.getGyroBiasX());
+      txFloatData.push_back(IMU.getGyroBiasY());
+      txFloatData.push_back(IMU.getGyroBiasZ());
+      break;
+
+    case replaceSpecifiedBiasCommand:
+      /**
+            * @brief: adapt the specified gyro bias and store it in non-volatile flash memory
+            * @return: 3-axis gyro bias [dps] after adaptation
+            */
+
+      if (rxFloatData.empty() || rxFloatData.size() != 3) {
+        *error |= commandProcessing_errorStatus;
+        break;
+      }
+
+      IMU.setGyroBiasX(rxFloatData.at(0));
+      IMU.setGyroBiasY(rxFloatData.at(1));
+      IMU.setGyroBiasZ(rxFloatData.at(2));
+
+      //! store bias in non-volatile flash memory
+      gyrB_x.write(rxFloatData.at(0));
+      gyrB_y.write(rxFloatData.at(1));
+      gyrB_z.write(rxFloatData.at(2));
+
+      txFloatData.push_back(IMU.getGyroBiasX());
+      txFloatData.push_back(IMU.getGyroBiasY());
+      txFloatData.push_back(IMU.getGyroBiasZ());
+      break;
+
+    case adaptedSpecifiedBiasCommand:
+      /**
+            * @brief: adapt the specified gyro bias
+            * @return: 3-axis gyro bias [dps] after adaptation
+            */
+
+      if (rxFloatData.empty() || rxFloatData.size() != 3) {
+        *error |= commandProcessing_errorStatus;
+        break;
+      }
+
+      IMU.setGyroBiasX(rxFloatData.at(0));
+      IMU.setGyroBiasY(rxFloatData.at(1));
+      IMU.setGyroBiasZ(rxFloatData.at(2));
+
+      txFloatData.push_back(IMU.getGyroBiasX());
+      txFloatData.push_back(IMU.getGyroBiasY());
+      txFloatData.push_back(IMU.getGyroBiasZ());
       break;
 
     case restartIMUCommand:
@@ -278,14 +369,14 @@ void processCommand(uint8_t command) {
       break;
 
     default:
-      transmitted_error = commandErrorStatus;
+      *error |= commandNotFound_errorStatus;
   }
 }
 
 void initializeSerial() {
-  Serial.begin(usb_serial_baudrate);
+  Serial.begin(UsbSerial_baudrate);
   while (!Serial) {
-    // Wait for the serial port to be ready
+    ;  // wait for serial port to connect. Needed for native USB
   }
 }
 
