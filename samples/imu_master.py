@@ -37,8 +37,6 @@ try:
     loop_count = args.loop
     command = int(args.cmd,16)
     txData = args.txdata
-
-    print(txData)
     
     n_transmissioned = 0
     n_received = 0
