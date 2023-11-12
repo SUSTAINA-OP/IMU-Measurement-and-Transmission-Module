@@ -27,8 +27,6 @@ const uint8_t setupBiasCommand = 0xB0;
 const uint8_t replaceSpecifiedBiasCommand = 0xB1;
 const uint8_t adaptedSpecifiedBiasCommand = 0xB2;
 
-const uint8_t restartIMUCommand = 0xC0;
-
 const uint8_t cheackFirmwareCommand = 0xD0;
 
 //! error status
@@ -349,15 +347,6 @@ void processCommand(uint8_t command, uint8_t* error) {
       txFloatData.push_back(IMU.getGyroBiasX());
       txFloatData.push_back(IMU.getGyroBiasY());
       txFloatData.push_back(IMU.getGyroBiasZ());
-      break;
-
-    case restartIMUCommand:
-      /**
-            * @brief: restarts communication with the ICM42688 
-            * @return: 
-            */
-
-      imu_begin_status = IMU.begin();
       break;
 
     case cheackFirmwareCommand:
