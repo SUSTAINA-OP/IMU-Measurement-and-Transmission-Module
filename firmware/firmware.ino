@@ -1,4 +1,5 @@
-#include "./src/ICM42688/ICM42688.h"
+// #include "./src/ICM42688/ICM42688.h"
+#include "./src/MPU9250/mpu9250.h"
 #include "./src/CRC16/CRC16.h"
 
 #include <FlashStorage.h>
@@ -59,7 +60,8 @@ std::vector<float> rxFloatData;
 std::vector<float> txFloatData;
 std::vector<uint8_t> txByteData;
 
-ICM42688 IMU(SPI, cs_pin);
+// ICM42688 IMU(SPI, cs_pin);
+bfs::Mpu9250 imu(&SPI, 3);
 
 CRC16 CRC;
 
@@ -75,10 +77,16 @@ void setup() {
 
 void loop() {
 
-  imuConnectionStatus = IMU.verifyWhoAmI();
+  // imuConnectionStatus = IMU.verifyWhoAmI();
 
-  if (imuBeginStatus < 0 || !imuConnectionStatus) {
-    imuBeginStatus = IMU.begin();
+  imuConnectionStatus = imu.ConfigSrd(19);
+
+  // if (imuBeginStatus < 0 || !imuConnectionStatus) {
+  //   imuBeginStatus = IMU.begin();
+  // }
+
+  if (!imuBeginStatus || !imuConnectionStatus) {
+    imuBeginStatus = imu.Begin();
   }
 
   if (Serial.available() >= rxPacket_min_length) {
@@ -200,20 +208,30 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: read the latest data from ICM42688
             * @return: latest 3-axis acceleration [g's], 3-axis gyro [bps], temperature [celsius]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
-        *error |= imuConnection_errorStatus;
-        break;
-      }
+      // if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      //   *error |= imuConnection_errorStatus;
+      //   break;
+      // }
 
-      imuResponseStatus = IMU.getAGT();
+      // imuResponseStatus = IMU.getAGT();
 
-      txFloatData.push_back(IMU.accX());
-      txFloatData.push_back(IMU.accY());
-      txFloatData.push_back(IMU.accZ());
-      txFloatData.push_back(IMU.gyrX());
-      txFloatData.push_back(IMU.gyrY());
-      txFloatData.push_back(IMU.gyrZ());
-      txFloatData.push_back(IMU.temp());
+      // txFloatData.push_back(IMU.accX());
+      // txFloatData.push_back(IMU.accY());
+      // txFloatData.push_back(IMU.accZ());
+      // txFloatData.push_back(IMU.gyrX());
+      // txFloatData.push_back(IMU.gyrY());
+      // txFloatData.push_back(IMU.gyrZ());
+      // txFloatData.push_back(IMU.temp());
+
+      imuResponseStatus = imu.Read();
+
+      txFloatData.push_back(imu.accel_x_mps2());
+      txFloatData.push_back(imu.accel_y_mps2());
+      txFloatData.push_back(imu.accel_z_mps2());
+      txFloatData.push_back(imu.gyro_x_radps());
+      txFloatData.push_back(imu.gyro_y_radps());
+      txFloatData.push_back(imu.gyro_z_radps());
+      txFloatData.push_back(imu.die_temp_c());
       break;
 
     case estimatedAccelCommand:
@@ -221,16 +239,22 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: read the latest data from ICM42688
             * @return: latest 3-axis acceleration [g's]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
-        *error |= imuConnection_errorStatus;
-        break;
-      }
+      // if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      //   *error |= imuConnection_errorStatus;
+      //   break;
+      // }
 
-      IMU.getAGT();
+      // IMU.getAGT();
 
-      txFloatData.push_back(IMU.accX());
-      txFloatData.push_back(IMU.accY());
-      txFloatData.push_back(IMU.accZ());
+      // txFloatData.push_back(IMU.accX());
+      // txFloatData.push_back(IMU.accY());
+      // txFloatData.push_back(IMU.accZ());
+
+      imuResponseStatus = imu.Read();
+
+      txFloatData.push_back(imu.accel_x_mps2());
+      txFloatData.push_back(imu.accel_y_mps2());
+      txFloatData.push_back(imu.accel_z_mps2());
       break;
 
     case estimatedGyroCommand:
@@ -238,16 +262,22 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: read the latest data from ICM42688
             * @return: latest 3-axis gyro [bps]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
-        *error |= imuConnection_errorStatus;
-        break;
-      }
+      // if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      //   *error |= imuConnection_errorStatus;
+      //   break;
+      // }
 
-      imuResponseStatus = IMU.getAGT();
+      // imuResponseStatus = IMU.getAGT();
 
-      txFloatData.push_back(IMU.gyrX());
-      txFloatData.push_back(IMU.gyrY());
-      txFloatData.push_back(IMU.gyrZ());
+      // txFloatData.push_back(IMU.gyrX());
+      // txFloatData.push_back(IMU.gyrY());
+      // txFloatData.push_back(IMU.gyrZ());
+
+      imuResponseStatus = imu.Read();
+
+      txFloatData.push_back(imu.gyro_x_radps());
+      txFloatData.push_back(imu.gyro_y_radps());
+      txFloatData.push_back(imu.gyro_z_radps());
       break;
 
     case estimatedTempCommand:
@@ -255,127 +285,131 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: read the latest data from ICM42688
             * @return: latest temperature [celsius]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
-        *error |= imuConnection_errorStatus;
-        break;
-      }
+      // if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      //   *error |= imuConnection_errorStatus;
+      //   break;
+      // }
 
-      imuResponseStatus = IMU.getAGT();
+      // imuResponseStatus = IMU.getAGT();
 
-      txFloatData.push_back(IMU.temp());
+      // txFloatData.push_back(IMU.temp());
+
+      imuResponseStatus = imu.Read();
+
+      txFloatData.push_back(imu.die_temp_c());
       break;
 
-    case estimatedBiasCommand:
-      /**
-            * @brief: estimates the gyro bias
-            * @return: estimated 3-axis gyro bias [dps]
-            */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
-        *error |= imuConnection_errorStatus;
-        break;
-      }
+      // case estimatedBiasCommand:
+      //   /**
+      //         * @brief: estimates the gyro bias
+      //         * @return: estimated 3-axis gyro bias [dps]
+      //         */
+      //   if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      //     *error |= imuConnection_errorStatus;
+      //     break;
+      //   }
 
-      imuResponseStatus = IMU.calibrateGyro();
+      //   imuResponseStatus = IMU.calibrateGyro();
 
-      txFloatData.push_back(IMU.getGyroBiasX());
-      txFloatData.push_back(IMU.getGyroBiasY());
-      txFloatData.push_back(IMU.getGyroBiasZ());
+      //   txFloatData.push_back(IMU.getGyroBiasX());
+      //   txFloatData.push_back(IMU.getGyroBiasY());
+      //   txFloatData.push_back(IMU.getGyroBiasZ());
 
-      //! restores the bias stored in non-volatile flash memory
-      //! due to the estimated bias being adapted
-      IMU.setGyroBiasX(gyrB_x.read());
-      IMU.setGyroBiasY(gyrB_y.read());
-      IMU.setGyroBiasZ(gyrB_z.read());
-      break;
+      //   //! restores the bias stored in non-volatile flash memory
+      //   //! due to the estimated bias being adapted
+      //   IMU.setGyroBiasX(gyrB_x.read());
+      //   IMU.setGyroBiasY(gyrB_y.read());
+      //   IMU.setGyroBiasZ(gyrB_z.read());
+      //   break;
 
-    case storedBiasCommand:
-      /**
-            * @brief: reads gyro bias stored in non-volatile flash memory
-            * @return: 3-axis gyro bias [dps] in non-volatile flash memory
-            */
+      // case storedBiasCommand:
+      //   /**
+      //         * @brief: reads gyro bias stored in non-volatile flash memory
+      //         * @return: 3-axis gyro bias [dps] in non-volatile flash memory
+      //         */
 
-      txFloatData.push_back(gyrB_x.read());
-      txFloatData.push_back(gyrB_y.read());
-      txFloatData.push_back(gyrB_z.read());
-      break;
+      //   txFloatData.push_back(gyrB_x.read());
+      //   txFloatData.push_back(gyrB_y.read());
+      //   txFloatData.push_back(gyrB_z.read());
+      //   break;
 
-    case adaptedBiasCommand:
-      /**
-            * @brief: reads adapted gyro bias
-            * @return: adapted 3-axis gyro bias [dps]
-            */
+      // case adaptedBiasCommand:
+      //   /**
+      //         * @brief: reads adapted gyro bias
+      //         * @return: adapted 3-axis gyro bias [dps]
+      //         */
 
-      txFloatData.push_back(IMU.getGyroBiasX());
-      txFloatData.push_back(IMU.getGyroBiasY());
-      txFloatData.push_back(IMU.getGyroBiasZ());
-      break;
+      //   txFloatData.push_back(IMU.getGyroBiasX());
+      //   txFloatData.push_back(IMU.getGyroBiasY());
+      //   txFloatData.push_back(IMU.getGyroBiasZ());
+      //   break;
 
-    case setupBiasCommand:
-      /**
-            * @brief: estimates the gyro bias, adapt the estimated gyro bias, store it in non-volatile flash memory
-            * @return: estimated 3-axis gyro bias [dps]
-            */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
-        *error |= imuConnection_errorStatus;
-        break;
-      }
+      // case setupBiasCommand:
+      //   /**
+      //         * @brief: estimates the gyro bias, adapt the estimated gyro bias, store it in non-volatile flash memory
+      //         * @return: estimated 3-axis gyro bias [dps]
+      //         */
+      //   if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      //     *error |= imuConnection_errorStatus;
+      //     break;
+      //   }
 
-      imuResponseStatus = IMU.calibrateGyro();
+      //   imuResponseStatus = IMU.calibrateGyro();
 
-      //! store bias in non-volatile flash memory
-      gyrB_x.write(IMU.getGyroBiasX());
-      gyrB_y.write(IMU.getGyroBiasY());
-      gyrB_z.write(IMU.getGyroBiasZ());
+      //   //! store bias in non-volatile flash memory
+      //   gyrB_x.write(IMU.getGyroBiasX());
+      //   gyrB_y.write(IMU.getGyroBiasY());
+      //   gyrB_z.write(IMU.getGyroBiasZ());
 
-      txFloatData.push_back(IMU.getGyroBiasX());
-      txFloatData.push_back(IMU.getGyroBiasY());
-      txFloatData.push_back(IMU.getGyroBiasZ());
-      break;
+      //   txFloatData.push_back(IMU.getGyroBiasX());
+      //   txFloatData.push_back(IMU.getGyroBiasY());
+      //   txFloatData.push_back(IMU.getGyroBiasZ());
+      //   break;
 
-    case replaceSpecifiedBiasCommand:
-      /**
-            * @brief: adapt the specified gyro bias and store it in non-volatile flash memory
-            * @return: 3-axis gyro bias [dps] after adaptation
-            */
+      // case replaceSpecifiedBiasCommand:
+      //   /**
+      //         * @brief: adapt the specified gyro bias and store it in non-volatile flash memory
+      //         * @return: 3-axis gyro bias [dps] after adaptation
+      //         */
 
-      if (rxFloatData.empty() || rxFloatData.size() != 3) {
-        *error |= commandProcessing_errorStatus;
-        break;
-      }
+      //   if (rxFloatData.empty() || rxFloatData.size() != 3) {
+      //     *error |= commandProcessing_errorStatus;
+      //     break;
+      //   }
 
-      IMU.setGyroBiasX(rxFloatData.at(0));
-      IMU.setGyroBiasY(rxFloatData.at(1));
-      IMU.setGyroBiasZ(rxFloatData.at(2));
+      //   IMU.setGyroBiasX(rxFloatData.at(0));
+      //   IMU.setGyroBiasY(rxFloatData.at(1));
+      //   IMU.setGyroBiasZ(rxFloatData.at(2));
 
-      //! store bias in non-volatile flash memory
-      gyrB_x.write(rxFloatData.at(0));
-      gyrB_y.write(rxFloatData.at(1));
-      gyrB_z.write(rxFloatData.at(2));
+      //   //! store bias in non-volatile flash memory
+      //   gyrB_x.write(rxFloatData.at(0));
+      //   gyrB_y.write(rxFloatData.at(1));
+      //   gyrB_z.write(rxFloatData.at(2));
 
-      txFloatData.push_back(IMU.getGyroBiasX());
-      txFloatData.push_back(IMU.getGyroBiasY());
-      txFloatData.push_back(IMU.getGyroBiasZ());
-      break;
+      //   txFloatData.push_back(IMU.getGyroBiasX());
+      //   txFloatData.push_back(IMU.getGyroBiasY());
+      //   txFloatData.push_back(IMU.getGyroBiasZ());
+      //   break;
 
-    case adaptedSpecifiedBiasCommand:
-      /**
-            * @brief: adapt the specified gyro bias
-            * @return: 3-axis gyro bias [dps] after adaptation
-            */
+      // case adaptedSpecifiedBiasCommand:
+      //   /**
+      //         * @brief: adapt the specified gyro bias
+      //         * @return: 3-axis gyro bias [dps] after adaptation
+      //         */
 
-      if (rxFloatData.empty() || rxFloatData.size() != 3) {
-        *error |= commandProcessing_errorStatus;
-        break;
-      }
+      //   if (rxFloatData.empty() || rxFloatData.size() != 3) {
+      //     *error |= commandProcessing_errorStatus;
+      //     break;
+      //   }
 
-      IMU.setGyroBiasX(rxFloatData.at(0));
-      IMU.setGyroBiasY(rxFloatData.at(1));
-      IMU.setGyroBiasZ(rxFloatData.at(2));
+      //   IMU.setGyroBiasX(rxFloatData.at(0));
+      //   IMU.setGyroBiasY(rxFloatData.at(1));
+      //   IMU.setGyroBiasZ(rxFloatData.at(2));
 
-      txFloatData.push_back(IMU.getGyroBiasX());
-      txFloatData.push_back(IMU.getGyroBiasY());
-      txFloatData.push_back(IMU.getGyroBiasZ());
-      break;
+      //   txFloatData.push_back(IMU.getGyroBiasX());
+      //   txFloatData.push_back(IMU.getGyroBiasY());
+      //   txFloatData.push_back(IMU.getGyroBiasZ());
+      //   break;
 
     case cheackFirmwareCommand:
       /**
@@ -403,9 +437,13 @@ void initializeSerial() {
 }
 
 void initializeIMU() {
-  imuBeginStatus = IMU.begin();
+  // imuBeginStatus = IMU.begin();
 
-  IMU.setGyroBiasX(gyrB_x.read());
-  IMU.setGyroBiasY(gyrB_y.read());
-  IMU.setGyroBiasZ(gyrB_z.read());
+  imuBeginStatus = imu.Begin();
+
+  SPI.begin();
+
+  // IMU.setGyroBiasX(gyrB_x.read());
+  // IMU.setGyroBiasY(gyrB_y.read());
+  // IMU.setGyroBiasZ(gyrB_z.read());
 }
