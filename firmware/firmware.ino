@@ -275,6 +275,10 @@ void processCommand(uint8_t command, uint8_t* error) {
         break;
       }
 
+      float oldGyroBiasX = IMU.getGyroBiasX();
+      float oldGyroBiasY = IMU.getGyroBiasY();
+      float oldGyroBiasZ = IMU.getGyroBiasZ();
+
       imuResponseStatus = IMU.calibrateGyro();
 
       txFloatData.push_back(IMU.getGyroBiasX());
@@ -283,9 +287,9 @@ void processCommand(uint8_t command, uint8_t* error) {
 
       //! restores the bias stored in non-volatile flash memory
       //! due to the estimated bias being adapted
-      IMU.setGyroBiasX(gyrB_x.read());
-      IMU.setGyroBiasY(gyrB_y.read());
-      IMU.setGyroBiasZ(gyrB_z.read());
+      IMU.setGyroBiasX(oldGyroBiasX);
+      IMU.setGyroBiasY(oldGyroBiasY);
+      IMU.setGyroBiasZ(oldGyroBiasZ);
       break;
 
     case storedBiasCommand:
