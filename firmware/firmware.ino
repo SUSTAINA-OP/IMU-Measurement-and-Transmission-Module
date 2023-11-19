@@ -53,7 +53,6 @@ const size_t txPacket_min_length = headerPacket_length + 3 + crc_length;
 
 int16_t imuBeginStatus = 0;
 int16_t imuResponseStatus = 0;
-bool imuConnectionStatus = false;
 
 std::vector<float> rxFloatData;
 std::vector<float> txFloatData;
@@ -75,9 +74,7 @@ void setup() {
 
 void loop() {
 
-  imuConnectionStatus = IMU.verifyWhoAmI();
-
-  if (imuBeginStatus < 0 || !imuConnectionStatus) {
+  if (imuBeginStatus < 0 || !IMU.verifyWhoAmI()) {
     imuBeginStatus = IMU.begin();
   }
 
@@ -200,7 +197,7 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: read the latest data from ICM42688
             * @return: latest 3-axis acceleration [g's], 3-axis gyro [bps], temperature [celsius]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      if (imuBeginStatus < 0) {
         *error |= imuConnection_errorStatus;
         break;
       }
@@ -221,7 +218,7 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: read the latest data from ICM42688
             * @return: latest 3-axis acceleration [g's]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      if (imuBeginStatus < 0) {
         *error |= imuConnection_errorStatus;
         break;
       }
@@ -238,7 +235,7 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: read the latest data from ICM42688
             * @return: latest 3-axis gyro [bps]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      if (imuBeginStatus < 0) {
         *error |= imuConnection_errorStatus;
         break;
       }
@@ -255,7 +252,7 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: read the latest data from ICM42688
             * @return: latest temperature [celsius]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      if (imuBeginStatus < 0) {
         *error |= imuConnection_errorStatus;
         break;
       }
@@ -270,7 +267,7 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: estimates the gyro bias
             * @return: estimated 3-axis gyro bias [dps]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      if (imuBeginStatus < 0) {
         *error |= imuConnection_errorStatus;
         break;
       }
@@ -319,7 +316,7 @@ void processCommand(uint8_t command, uint8_t* error) {
             * @brief: estimates the gyro bias, adapt the estimated gyro bias, store it in non-volatile flash memory
             * @return: estimated 3-axis gyro bias [dps]
             */
-      if (imuBeginStatus < 0 || !imuConnectionStatus) {
+      if (imuBeginStatus < 0) {
         *error |= imuConnection_errorStatus;
         break;
       }
