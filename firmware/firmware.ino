@@ -191,6 +191,9 @@ bool checkHeader(const uint8_t header[], const size_t length, uint8_t packet[]) 
 }
 
 void processCommand(uint8_t command, uint8_t* error) {
+
+  float _GyroBias[3] = {};
+
   switch (command) {
     case estimatedAccelGyroTempCommand:
       /**
@@ -272,9 +275,9 @@ void processCommand(uint8_t command, uint8_t* error) {
         break;
       }
 
-      float oldGyroBiasX = IMU.getGyroBiasX();
-      float oldGyroBiasY = IMU.getGyroBiasY();
-      float oldGyroBiasZ = IMU.getGyroBiasZ();
+      _GyroBias[0] = IMU.getGyroBiasX();
+      _GyroBias[1] = IMU.getGyroBiasY();
+      _GyroBias[2] = IMU.getGyroBiasZ();
 
       imuResponseStatus = IMU.calibrateGyro();
 
@@ -284,9 +287,9 @@ void processCommand(uint8_t command, uint8_t* error) {
 
       //! restores the bias stored in non-volatile flash memory
       //! due to the estimated bias being adapted
-      IMU.setGyroBiasX(oldGyroBiasX);
-      IMU.setGyroBiasY(oldGyroBiasY);
-      IMU.setGyroBiasZ(oldGyroBiasZ);
+      IMU.setGyroBiasX(_GyroBias[0]);
+      IMU.setGyroBiasY(_GyroBias[1]);
+      IMU.setGyroBiasZ(_GyroBias[2]);
       break;
 
     case storedBiasCommand:
