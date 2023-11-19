@@ -176,6 +176,12 @@ void loop() {
       txPacket[packetIndex++] = highByte(txCrc);
 
       Serial.write(txPacket, txPacket_length);
+
+      if (tx_errorStatus != 0b00000000) {
+        digitalWrite(13, LOW);  // light on
+      } else {
+        digitalWrite(13, HIGH);  //light on
+      }
     }
   }
 }
