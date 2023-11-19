@@ -68,7 +68,7 @@ FlashStorage(gyrB_y, float);
 FlashStorage(gyrB_z, float);
 
 void setup() {
-  initializeSerial();
+  initializeSerial(UsbSerial_baudrate);
   initializeIMU();
 }
 
@@ -405,8 +405,8 @@ void processCommand(uint8_t command, uint8_t* error) {
   }
 }
 
-void initializeSerial() {
-  Serial.begin(UsbSerial_baudrate);
+void initializeSerial(uint32_t baudrate) {
+  Serial.begin(baudrate);
   while (!Serial) {
     ;  // wait for serial port to connect. Needed for native USB
   }
