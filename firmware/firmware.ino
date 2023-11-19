@@ -34,7 +34,7 @@ const uint8_t cheackFirmwareCommand = 0xD0;
 const uint8_t crc_errorStatus = 0b00000010;
 const uint8_t imuConnection_errorStatus = 0b00000100;
 const uint8_t imuResponse_errorStatus = 0b00001000;
-const uint8_t commandNotFound_errorStatus = 0b00010000;
+const uint8_t commandUnsupport_errorStatus = 0b00010000;
 const uint8_t commandProcessing_errorStatus = 0b00100000;
 
 /**
@@ -397,7 +397,7 @@ void processCommand(uint8_t command, uint8_t* error) {
       break;
 
     default:
-      *error |= commandNotFound_errorStatus;
+      *error |= commandUnsupport_errorStatus;
   }
 
   if (imuResponseStatus < 0) {
