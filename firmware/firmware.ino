@@ -1,3 +1,16 @@
+/**
+  * Arduino Firmware for IMU Measurement and Transmission Module
+  *
+  * This firmware is intended to be written to an Arduino board mounted on the IMU Measurement and Transmission Module.
+  * The Arduino board is assumed to be Seeeduino XIAO (CPU: SAMD21G18) made by Seed Studio.
+  *
+  * This firmware uses the FlashStorage library for SAMD21.
+  * Therefore, this firmware is not compatible with another XAIO series board.
+  *
+  * In this firmware, communication with the IMU must be via SPI connection.
+  * For I2C connection, change the arguments in the object definition of the class.
+  */
+
 #include "./src/ICM42688/ICM42688.h"
 #include "./src/CRC16/CRC16.h"
 
