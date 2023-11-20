@@ -139,7 +139,7 @@ void loop() {
 
           for (int i = 0; i < rxFloatData_count; i++) {
             float rxFloatData_float = 0;
-            byte* bytePtr = (byte*)&rxFloatData_float;
+            uint8_t* bytePtr = (uint8_t*)&rxFloatData_float;
 
             for (int j = 0; j < sizeof(float); j++) {
               bytePtr[j] = rxFloatData_bytes[i * sizeof(float) + j];
