@@ -2,43 +2,88 @@
 import serial
 import time
 import struct
+import argparse
 
 from CRC16 import CRC16 as CRC
 
 ser = serial.Serial('/dev/ttyACM0', 115200)
 ser.timeout = 1/1000
 
-firmwareCheackCommand = 0xD0
+# command
+# commands to return the values: 0xA*
+estimatedAccelGyroTempCommand = 0xA0
+estimatedAccelCommand = 0xA1
+estimatedGyroCommand = 0xA2
+estimatedTempCommand = 0xA3
+estimatedBiasCommand = 0xA4
+storedBiasCommand = 0xA5
+adaptedBiasCommand = 0xA6
+
+# commands to change/return the values: 0xB*
+setupBiasCommand = 0xB0
+replaceSpecifiedBiasCommand = 0xB1
+adaptedSpecifiedBiasCommand = 0xB2
+
+restartIMUCommand = 0xC0
+cheackFirmwareCommand = 0xD0
 
 try:
+    parser = argparse.ArgumentParser(description='Command and Loop Example')
+    parser.add_argument('--loop', type=int, default=None, help='Number of times to loop')
+    parser.add_argument('--cmd', type=str, default='0xA0', help='Command to execute')
+    parser.add_argument('--txdata', type=float, nargs='+', default=None, help='Float values to send')
+    args = parser.parse_args()
+
+    loop_count = args.loop
+    command = int(args.cmd,16)
+    txData = args.txdata
+    
     n_transmissioned = 0
     n_received = 0
     n_corrected = 0
+
+    cheack_crc = 0
 
     while True:
         ser.reset_input_buffer()
         
         header = [0xFE, 0xFE]
-        command = 0xA0
 
-        txbuf = []
-        txbuf.extend(header)
-        txbuf.append(command)
+        txBuf = []
+        txBuf.extend(header)
+        txBuf.append(command)
 
-        crc = CRC.getCrc16(txbuf)
-        txbuf.extend(crc.to_bytes(2, byteorder="little"))
+        # packet length: header[] + command + length + crc(2)
+        tx_length = len(header) + 4
 
-        txbuf_hex = ['{:02X}'.format(i) for i in txbuf]
+        if txData is not None :
+            tx_length += len(txData) * 4
+
+        txBuf.append(tx_length)
+
+        if txData is not None :
+            txData_byte = b''.join([struct.pack('f', data) for data in txData])
+            txBuf.extend(txData_byte)
+
+        crc = CRC.getCrc16(txBuf)
+        txBuf.extend(crc.to_bytes(2, byteorder="little"))
+
+        txBuf_hex = ['{:02X}'.format(i) for i in txBuf]
 
         # Transmit the packet
-        ser.write(bytes(txbuf))
+        ser.write(bytes(txBuf))
 
         n_transmissioned += 1
 
         print("<----")
-        print("command  : ", txbuf_hex[2])
+        print("command  : ", txBuf_hex[2])
+        print("length   : ", int(txBuf_hex[3],16))
+
+        if txData is not None :
+            print("txdata   : ", txData)
+
         print("crc      : ", crc)
-        print("txbuf    : ", txbuf_hex)
+        print("txBuf    : ", txBuf_hex)
         print("<----")
 
         start_time = time.time()
@@ -53,25 +98,25 @@ try:
 
                 n_received += 1
 
-                rxbuf = []
-                rxbuf.extend(header)
-                rxbuf.extend(list(ser.read(3)))
+                rxBuf = []
+                rxBuf.extend(header)
+                rxBuf.extend(list(ser.read(3)))
 
-                received_length = int(rxbuf[3])
+                received_length = int(rxBuf[3])
 
-                rxbuf.extend(list(ser.read(received_length-5)))
+                rxBuf.extend(list(ser.read(received_length-5)))
 
-                rxbuf_hex = ['{:02X}'.format(i) for i in rxbuf]
+                rxBuf_hex = ['{:02X}'.format(i) for i in rxBuf]
 
-                print("rxbuf    : ", rxbuf_hex)
-                print("command  : ", rxbuf_hex[2])
+                print("rxBuf    : ", rxBuf_hex)
+                print("command  : ", rxBuf_hex[2])
                 print("length   : ", received_length)
-                print("error    : ", rxbuf_hex[4])
+                print("error    : ", format(int(rxBuf[4]),"#010b"))
 
-                crc16 = int.from_bytes(bytes(rxbuf[-2:]), byteorder="little")
+                crc16 = int.from_bytes(bytes(rxBuf[-2:]), byteorder="little")
                 print("crc      :", crc16)
 
-                cheack_crc = CRC.checkCrc16(rxbuf)
+                cheack_crc = CRC.checkCrc16(rxBuf)
                 print("check crc:", cheack_crc )
 
                 if not cheack_crc:
@@ -80,14 +125,14 @@ try:
 
                 n_corrected += 1
 
-                if rxbuf_hex[2] == '{:02X}'.format(firmwareCheackCommand) :
-                    firmwareVersion = rxbuf_hex[5]
+                if rxBuf_hex[2] == '{:02X}'.format(cheackFirmwareCommand) :
+                    firmwareVersion = rxBuf_hex[5]
                     print("ver. :", firmwareVersion )
                     break
 
                 received_data = []
-                for i in range(5, len(rxbuf_hex)-2, 4):
-                    received_data.append(struct.unpack('f', bytes.fromhex(''.join(rxbuf_hex[i:i + 4])))[0])
+                for i in range(5, len(rxBuf_hex)-2, 4):
+                    received_data.append(struct.unpack('f', bytes.fromhex(''.join(rxBuf_hex[i:i + 4])))[0])
                 print("data     :", received_data )
                 break
 
@@ -100,6 +145,11 @@ try:
         print("rx       : ", n_received)
         if n_received != 0:
             print("crc error: ", (n_received - n_corrected)/n_received*100, "%\n")
+        else:
+            print("\n")
+
+        if cheack_crc and loop_count is not None:
+            exit()
 
 except KeyboardInterrupt:
     print("Program stopped.")

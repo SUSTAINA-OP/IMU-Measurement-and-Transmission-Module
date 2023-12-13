@@ -697,7 +697,7 @@ uint8_t ICM42688::whoAmI() {
   return _buffer[0];
 }
 
-bool ICM42688::getWhoAmI() {
+bool ICM42688::verifyWhoAmI() {
   // check the WHO AM I byte
   if(whoAmI() != WHO_AM_I) {
     return false;
